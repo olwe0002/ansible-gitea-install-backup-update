@@ -1,0 +1,112 @@
+- name: install used packages
+  become: true
+  apt: 
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ apt_dependencies }}"
+
+- name: get latest gitea version number on gitlab
+  shell: "curl -s {{ releases_url }} | jq -r '.tag_name'"
+  register: latest_release
+  args:
+    warn: no
+  changed_when: false
+
+- name: get installed version number
+  shell: "curl -s {{ api_version_url }} | jq -r '.version'"
+  register: installed_release
+  args:
+    warn: no
+  changed_when: false
+
+- name: get download url
+  shell: "curl -s {{ releases_url }} | jq -r '.assets[]  | select(.name | contains(\"{{ plattform }}\")).browser_download_url' |  sed -n 1p" # use sed to get the first line of the output
+  register: download_url
+  args:
+    warn: no
+  changed_when: false
+
+- name: get rid of the need to use .stdout
+  set_fact:
+    latest_release: "{{ latest_release.stdout[1:6] }}"  #substring to get rid of the "v" !
+    installed_release: "{{ installed_release.stdout }}"
+    download_url: "{{ download_url.stdout }}"
+
+- name: show debug information  
+  debug: 
+    msg:
+    - "latest gitea release found: {{ latest_release }}"
+    - "installed release: {{ installed_release }}"
+    - "new version download url: {{ download_url }}"
+
+- name: stop gitea service 
+  become: true
+  service: 
+    name: "{{ service_name }}" 
+    state: stopped 
+  when: latest_release != installed_release
+
+- name: create backup dump
+  shell: "./gitea dump" 
+  args:
+    chdir: "{{ bin_path }}"
+  become: true 
+  become_user: git
+  when: latest_release != installed_release
+
+- name: get dump file filename
+  find:
+    paths: "{{ bin_path }}"
+    patterns: "*.zip"
+  register: dump_files
+  when: latest_release != installed_release
+
+- name: copy dump file(s) to backup dir
+  copy: 
+    src: "{{ item.path }}"
+    dest: "{{ backup_dir }}{{ item.path | basename }}" #basename to extract file name
+    remote_src: yes
+  become: true 
+  with_items: "{{ dump_files.files }}"
+  when: latest_release != installed_release
+
+- name: remove dump file from gitea base directory
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  become: true
+  with_items: "{{ dump_files.files }}"
+  when: latest_release != installed_release
+
+- name: save old gitea binary file
+  become: true
+  copy: 
+    src: "{{ bin_path }}gitea"
+    dest: "{{ bin_path }}gitea.old"
+    remote_src: yes
+  when: latest_release != installed_release
+
+- name: remove file
+  become: true
+  file: 
+    path: "{{ bin_path }}gitea" 
+    state: absent 
+  when: latest_release != installed_release
+
+- name: download new version
+  become: true
+  get_url:
+    url: "{{ download_url }}"
+    dest: "{{ bin_path }}gitea"
+    owner: "{{ user_name }}"
+    group: "{{ user_name }}"
+    mode: 0700 # allow execution for the owner of the file, leading 0 is important
+  when: latest_release != installed_release
+  
+- name: start gitea service
+  become: true
+  service: 
+    name: "{{ service_name }}" 
+    state: started 
+  when: latest_release != installed_release
+

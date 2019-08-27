@@ -1,0 +1,22 @@
+---
+#change_them:
+
+api_version_url: "http://server_name>:<port>/api/v1/version"
+service_name: "service_name"
+user_name: "os_user_name"
+bin_path: "/gitea_directory/"
+plattform: "linux-arm-6"
+backup_dir: "/backup_directory/"
+
+healthcheck_urls: 
+ - "http://server_name>:<port>/"
+
+#dont_change_them:
+
+releases_url: "https://api.github.com/repos/go-gitea/gitea/releases/latest"
+download_url: "https://github.com/go-gitea/gitea/releases/download/"
+apt_dependencies:
+  - jq
+  - sed
+
+

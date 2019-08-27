@@ -1,0 +1,19 @@
+
+- name: debug information 
+  debug: 
+    msg: "healh checks for following URLs: {{ healthcheck_urls }}"
+  when: healthcheck_urls is defined
+
+- name: check http status code
+  uri:
+    url: "{{ item }} "
+    method: GET
+    status_code: 200
+    validate_certs: no
+  retries: "{{ healthcheck.retries }}" 
+  delay: "{{ healthcheck.delay }}"
+  register: result
+  until: result.status == 200
+  changed_when: false
+  with_items: "{{ healthcheck_urls }}"
+  when: healthcheck_urls is defined

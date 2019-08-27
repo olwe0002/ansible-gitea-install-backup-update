@@ -1,0 +1,6 @@
+---
+- name: gitea
+  hosts: gitea
+  roles:
+    - gitea
+    - healthcheck
