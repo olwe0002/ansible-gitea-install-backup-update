@@ -51,7 +51,7 @@
   args:
     chdir: "{{ bin_path }}"
   become: true 
-  become_user: git
+  become_user: "{{ user_name }}"
   when: latest_release != installed_release
 
 - name: get dump file filename
