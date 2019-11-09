@@ -1,0 +1,5 @@
+- name: call healthcheck
+  include_role:
+    name: healthcheck
+  vars:
+    healthcheck_urls: "{{ gitea.healthcheck_urls }}"

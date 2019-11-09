@@ -1,22 +1,52 @@
----
-#change_them:
+gitea:
+  port: 3000
+  api_version_url: "http://{{ hostname }}.{{ tld }}:3000/api/v1/version"
+  releases_url: https://api.github.com/repos/go-gitea/gitea/releases/latest
 
-api_version_url: "http://server_name>:<port>/api/v1/version"
-service_name: "service_name"
-user_name: "os_user_name"
-bin_path: "/gitea_directory/"
-plattform: "linux-arm-6"
-backup_dir: "/backup_directory/"
+  service_name: gitea.service
+  user_name: git
+  group_name: git
 
-healthcheck_urls: 
- - "http://server_name>:<port>/"
+  bin_dir: /home/git/gitea
+  plattform: linux-arm-6
 
-#dont_change_them:
+  JWT_SECRET : "{{ 9999999999999 | random | to_uuid }}{{ 99999999999999 | random | to_uuid }}"
+  INTERNAL_TOKEN : "{{ 999999999999999 | random | to_uuid }}{{ 9999999999999999 | random | to_uuid }}{{ 99999999999999999 | random | to_uuid }}{{ 999999999999999999 | random | to_uuid }}"
+  SECRET_KEY : "{{ 9999999999999999999 | random | to_uuid }}{{ 99999999999999999999 | random | to_uuid }}"
+  LFS_JWT_SECRET : "{{ 999999999999999999999 | random | to_uuid }}{{ 9999999999999999999999 | random | to_uuid }}"
 
-releases_url: "https://api.github.com/repos/go-gitea/gitea/releases/latest"
-download_url: "https://github.com/go-gitea/gitea/releases/download/"
-apt_dependencies:
-  - jq
-  - sed
+  external_dir: "{{ external_base_dir }}/gitea"
+  backup_dir: "{{ backup_base_dir }}/gitea"
+  repository_dir: "{{ external_base_dir }}/gitea/gitea-repositories"
+  data_dir: "{{ external_base_dir }}/gitea/data"
+  lfs_dir: "{{ external_base_dir }}/gitea/data/lfs"
+  log_dir: /var/log/gitea
 
+  db_apt_packages:
+    - postgresql-11
+    - libpq-dev #used by postgres module of ansible
+    - "python{{ '3' if ansible_python.version.major == 3 else '' }}-psycopg2" #used by postgres module of ansible
 
+  apt_packages:
+    - jq
+    - sed
+    - git
+
+  healthcheck_urls: 
+  - "http://{{ fqdn }}:3000/"
+
+  db:
+    name: gitea
+    user: gitea
+    password: vault-encrypted password here
+
+  application_admins:
+    - name: gitea_admin
+      email: "gitea_admin@{{ fqdn }}"
+      password: vault-encrypted password here
+    # more admins here
+  application_users:
+    - name: user
+      email: "user@{{ fqdn }}"
+      password: vault-encrypted password here
+    # more users here

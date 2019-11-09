@@ -1,0 +1,77 @@
+
+
+- name: get download url
+  shell: "curl -s {{ gitea.releases_url }} | jq -r '.assets[]  | select(.name | contains(\"{{ gitea.plattform }}\")).browser_download_url' |  sed -n 1p" # use sed to get the first line of the output
+  register: download_url
+  args:
+    warn: no
+  changed_when: false
+
+- name: set facts
+  set_fact:
+    download_url: "{{ download_url.stdout }}"
+
+- name: show debug information
+  debug: 
+    msg:
+    - "latest gitea release found: {{ latest_release }}"
+    - "download url: {{ download_url }}"
+
+- name: remove current gitea bin
+  file: 
+    path: "{{ gitea.bin_dir }}/gitea" 
+    state: absent 
+  when: gitea_is_installed and latest_release != installed_release
+
+# install/update
+
+- name: download latest gitea version
+  get_url:
+    url: "{{ download_url }}"
+    dest: "{{ gitea.bin_dir }}/gitea"
+    owner: "{{ gitea.user_name }}"
+    group: "{{ gitea.group_name }}"
+    mode: 0700
+  when: (gitea_is_installed and latest_release != installed_release) or (not gitea_is_installed)
+  
+
+
+
+- name: create app.ini for gitea
+  template:
+    src: templates/app.ini.j2
+    dest: "{{ gitea.bin_dir }}/custom/conf/app.ini"
+    owner: "{{ gitea.user_name }}"
+    group: "{{ gitea.group_name }}"
+    mode: 0600
+  when: not gitea_is_installed
+
+- name: create service for gitea
+  template:
+    src: templates/gitea.service.j2
+    dest: "/etc/systemd/system/{{ gitea.service_name }}"
+    owner: root
+    group: root
+    mode: 0777
+  when: not gitea_is_installed
+
+- name: create service environment file for gitea
+  template:
+    src: templates/gitea.conf.j2
+    dest: "/etc/systemd/system/{{ gitea.service_name }}.conf"
+    owner: root
+    group: root
+    mode: 0644
+  when: not gitea_is_installed 
+
+- name: reload changes
+  shell: systemctl daemon-reload
+  when: not gitea_is_installed 
+
+# on "Segmentation faul" error update firmware manually with "rpi-update" command
+- name: start gitea service
+  service: 
+    name: "{{ gitea.service_name }}" 
+    state: started
+    enabled: yes
+  when: (gitea_is_installed and latest_release != installed_release) or (not gitea_is_installed)

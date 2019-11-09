@@ -1,0 +1,82 @@
+- name: populate service facts
+  service_facts:
+
+- name: set default value
+  set_fact:
+    gitea_is_installed: false
+
+- name: check if service is existing
+  set_fact:
+    gitea_is_installed: true
+  when: ansible_facts.services[gitea.service_name] is defined
+
+- name: try to start gitea service
+  service: 
+    name: "{{ gitea.service_name }}" 
+    state: started 
+  when: gitea_is_installed
+  ignore_errors: yes
+
+- name: install used packages
+  apt: 
+    name: "{{ gitea.apt_packages }}"
+    state: present
+    force_apt_get: yes
+
+- name: get installed version number
+  shell: "curl -s {{ gitea.api_version_url }} | jq -r '.version'"
+  register: installed_release
+  args:
+    warn: no
+  changed_when: false
+  retries: "{{ healthcheck.retries }}" 
+  delay: "{{ healthcheck.delay }}"
+  when: gitea_is_installed
+
+- name: get latest gitea version number on github
+  shell: "curl -s {{ gitea.releases_url }} | jq -r '.tag_name'"
+  register: latest_release
+  args:
+    warn: no
+
+- name: set facts
+  set_fact:
+    latest_release: "{{ latest_release.stdout[1:6] }}"  #substring to get rid of the "v" !
+
+- name: set facts
+  set_fact:
+    installed_release:  "{{ installed_release.stdout }}"
+  when: gitea_is_installed
+
+- name: show debug information 
+  debug: 
+    msg:
+      - "gitea is installed: {{ gitea_is_installed }}"
+      - "installed release: {{ installed_release }}"
+  when: gitea_is_installed
+
+- name: "create {{ gitea.group_name }} group"
+  group:
+    name: "{{ gitea.group_name }}"
+    state: present
+
+- name: "create {{ gitea.user_name }} user"
+  user:
+    name: "{{ gitea.user_name }}"
+    groups: "{{ gitea.group_name }},users"
+  when: not gitea_is_installed
+
+- name: create gitea directory structure
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ gitea.user_name }}"
+    group: "{{ gitea.group_name }}"
+    mode: 0770
+  when: not gitea_is_installed
+  with_items:
+    - "{{ gitea.bin_dir }}/custom/conf/"
+    - "{{ gitea.repository_dir }}"
+    - "{{ gitea.log_dir }}"
+    - "{{ gitea.data_dir }}"
+    - "{{ gitea.lfs_dir }}"

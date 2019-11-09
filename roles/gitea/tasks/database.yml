@@ -1,0 +1,53 @@
+
+- name: install db packages
+  apt: 
+    name: "{{ nextcloud.db_apt_packages }}"
+    state: present
+    force_apt_get: yes
+
+- name: add postgres user to ssl-cert groups
+  user:
+    name: postgres
+    groups: "ssl-cert"
+    state: present
+
+- name: start and enable postgresql service
+  service: 
+    name: postgresql
+    state: started 
+    enabled: yes
+
+- name: create postgres user
+  postgresql_user:
+    name: "{{ gitea.db.user }}"
+    password: "{{ gitea.db.password }}"
+    encrypted: yes
+    state: present
+    role_attr_flags: CREATEDB
+  become_user: postgres
+
+- name: create database
+  postgresql_db:
+    name: "{{ gitea.db.name }}"
+    state: present
+    owner: "{{ gitea.db.user }}"
+    encoding: "UTF-8"
+    template: "template0"
+  become_user: postgres
+
+- name: template initial database image to remote host
+  template:
+    src: templates/gitea_initial.sql.j2
+    dest: /tmp/gitea_initial.sql
+  when: not gitea_is_installed
+
+- name: import initial database setup
+  shell: "psql {{ gitea.db.name }} < /tmp/gitea_initial.sql"
+  become_user: postgres
+  when: not gitea_is_installed
+
+- name: remove initial database image
+  file:
+    path: /tmp/gitea_initial.sql
+    state: absent
+  when: not gitea_is_installed

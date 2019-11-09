@@ -1,0 +1,67 @@
+APP_NAME = Gitea: Git with a cup of tea
+RUN_USER = {{ gitea.user_name }}
+RUN_MODE = prod
+
+[oauth2]
+JWT_SECRET = {{ gitea.JWT_SECRET[1:43] }}
+
+[security]
+INTERNAL_TOKEN = {{ gitea.INTERNAL_TOKEN[1:105] }}
+INSTALL_LOCK   = true
+SECRET_KEY     = {{ gitea.SECRET_KEY[1:64] }}
+
+[database]
+DB_TYPE  = postgres
+HOST     = 127.0.0.1:5432
+NAME     = {{ gitea.db.name }}
+USER     = {{ gitea.db.user }}
+PASSWD   = {{ gitea.db.password }}
+SSL_MODE = disable
+PATH     = unused
+CHARSET  = utf8
+
+[repository]
+ROOT = {{ gitea.repository_dir }}
+
+[server]
+SSH_DOMAIN       = {{ fqdn }}
+DOMAIN           = {{ fqdn }}
+HTTP_PORT        = {{ gitea.port }}
+ROOT_URL         = http://{{ fqdn }}:{{ gitea.port }}/
+DISABLE_SSH      = false
+SSH_PORT         = 22
+LFS_START_SERVER = true
+LFS_CONTENT_PATH = {{ gitea.lfs_dir }}
+LFS_JWT_SECRET   = {{ gitea.LFS_JWT_SECRET[1:43] }}
+OFFLINE_MODE     = false
+
+[mailer]
+ENABLED = false
+
+[service]
+REGISTER_EMAIL_CONFIRM            = false
+ENABLE_NOTIFY_MAIL                = false
+DISABLE_REGISTRATION              = false
+ALLOW_ONLY_EXTERNAL_REGISTRATION  = false
+ENABLE_CAPTCHA                    = false
+REQUIRE_SIGNIN_VIEW               = false
+DEFAULT_KEEP_EMAIL_PRIVATE        = false
+DEFAULT_ALLOW_CREATE_ORGANIZATION = true
+DEFAULT_ENABLE_TIMETRACKING       = true
+NO_REPLY_ADDRESS                  = noreply.example.org
+
+[picture]
+DISABLE_GRAVATAR        = false
+ENABLE_FEDERATED_AVATAR = true
+
+[openid]
+ENABLE_OPENID_SIGNIN = false
+ENABLE_OPENID_SIGNUP = false
+
+[session]
+PROVIDER = file
+
+[log]
+MODE      = file
+LEVEL     = Info
+ROOT_PATH = {{ gitea.log_dir }}

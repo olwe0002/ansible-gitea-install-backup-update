@@ -1,0 +1,18 @@
+
+- name: create admin users
+  shell: "./gitea admin create-user --username {{ item.name }} --password {{ item.password }} --email {{ item.email }} --must-change-password=false --admin" 
+  args:
+    chdir: "{{ gitea.bin_dir }}"
+  become_user: "{{ gitea.user_name }}"
+  when: not gitea_is_installed 
+  with_items: "{{ gitea.application_admins }}"
+  no_log: true
+
+- name: create users
+  shell: "./gitea admin create-user --username {{ item.name }} --password {{ item.password }} --email {{ item.email }} --must-change-password=false" 
+  args:
+    chdir: "{{ gitea.bin_dir }}"
+  become_user: "{{ gitea.user_name }}"
+  when: not gitea_is_installed 
+  with_items: "{{ gitea.application_users }}"
+  no_log: true

@@ -1,0 +1,67 @@
+- name: create backup directory
+  file:
+    path: "{{ gitea.backup_dir }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: 0770
+  when: not gitea_is_installed
+
+- name: stop gitea service 
+  service: 
+    name: "{{ gitea.service_name }}" 
+    state: stopped 
+  when: gitea_is_installed and latest_release != installed_release
+
+- name: create backup dump
+  shell: "./gitea dump" 
+  args:
+    chdir: "{{ gitea.bin_dir }}"
+  become_user: "{{ gitea.user_name }}"
+  when: gitea_is_installed and latest_release != installed_release
+
+- name: create database backup dump
+  postgresql_db:
+    name: "{{ gitea.db.name }}"
+    state: dump
+    target: "{{ gitea.backup_dir }}/{{ ansible_date_time.date }}.sql.gz"
+  become_user: postgres
+  when: gitea_is_installed
+
+- name: get dump file filename
+  find:
+    paths: "{{ gitea.bin_dir }}"
+    patterns: "*.zip"
+  register: dump_files
+  when: gitea_is_installed and latest_release != installed_release
+
+- name: copy dump file(s) to backup dir
+  copy: 
+    src: "{{ item.path }}"
+    dest: "{{ gitea.backup_dir }}/{{ item.path | basename }}"
+    remote_src: yes
+  with_items: "{{ dump_files.files }}"
+  when: gitea_is_installed and latest_release != installed_release
+
+- name: remove dump file from gitea base directory
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ dump_files.files }}"
+  when: gitea_is_installed and latest_release != installed_release
+
+- name: save old gitea binary file
+  copy: 
+    src: "{{ gitea.bin_dir }}/gitea"
+    dest: "{{ gitea.backup_dir }}/gitea_{{ installed_release }}"
+    remote_src: yes
+  when: gitea_is_installed and latest_release != installed_release
+
+- name: setup nightly database backup cron file for gitea
+  cron:
+    name: backup_gitea_db
+    hour: "2"
+    user: postgres
+    job: "pg_dump {{ gitea.db.name }} | gzip > {{ gitea.backup_dir }}/$(date '+%Y.%m.%d_%H_%M_%S').sql.gz"
+    cron_file: backup_gitea_db
+  when: not gitea_is_installed    

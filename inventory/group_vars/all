@@ -1,4 +1,13 @@
----
 healthcheck:
   retries: 3
   delay: 20
+
+reboot:
+  timeout: 300
+
+hostname: target hostname
+tld: domain here
+fqdn: "{{ hostname }}.{{ tld }}"
+
+external_base_dir: /mnt/exthdd
+backup_base_dir:  "{{external_base_dir}}/backup"

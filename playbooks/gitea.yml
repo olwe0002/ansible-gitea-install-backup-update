@@ -1,6 +1,7 @@
 ---
 - name: gitea
   hosts: gitea
+  become: true
+  gather_facts: yes
   roles:
     - gitea
-    - healthcheck
