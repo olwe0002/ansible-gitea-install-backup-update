@@ -61,7 +61,8 @@
   cron:
     name: backup_gitea_db
     hour: "2"
+    minute: "0"
     user: postgres
-    job: "pg_dump {{ gitea.db.name }} | gzip > {{ gitea.backup_dir }}/$(date '+%Y.%m.%d_%H_%M_%S').sql.gz"
+    job: "pg_dump {{ gitea.db.name }} | gzip > {{ gitea.backup_dir }}/$(date '+\\%Y.\\%m.\\%d_\\%H_\\%M_\\%S').sql.gz"
     cron_file: backup_gitea_db
   when: not gitea_is_installed    
