@@ -1,6 +1,6 @@
 - name: print debug information
   debug: 
-   msg: "healh checks for following URLs: {{ healthcheck_urls }}"
+   msg: "health checks for following URLs: {{ healthcheck_urls }}"
   when: healthcheck_urls is defined
 
 - name: check http status code
