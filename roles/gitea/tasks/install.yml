@@ -34,9 +34,6 @@
     mode: 0700
   when: (gitea_is_installed and latest_release != installed_release) or (not gitea_is_installed)
   
-
-
-
 - name: create app.ini for gitea
   template:
     src: templates/app.ini.j2
@@ -52,7 +49,7 @@
     dest: "/etc/systemd/system/{{ gitea.service_name }}"
     owner: root
     group: root
-    mode: 0777
+    mode: 0644
   when: not gitea_is_installed
 
 - name: create service environment file for gitea
