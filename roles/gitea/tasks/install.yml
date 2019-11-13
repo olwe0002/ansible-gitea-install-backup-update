@@ -49,7 +49,7 @@
     dest: "/etc/systemd/system/{{ gitea.service_name }}"
     owner: root
     group: root
-    mode: 0644
+    mode: 0755
   when: not gitea_is_installed
 
 - name: create service environment file for gitea
