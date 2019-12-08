@@ -41,7 +41,7 @@
 
 - name: set facts
   set_fact:
-    latest_release: "{{ latest_release.stdout[1:6] }}"  #substring to get rid of the "v" !
+    latest_release: "{{ latest_release.stdout | replace('v','') }}"
 
 - name: set facts
   set_fact:
